@@ -1,5 +1,3 @@
-// diff-to-markdown.js
-
 const fs = require('fs');
 const path = require('path');
 const diff = require('diff');
@@ -19,36 +17,47 @@ function readFileContent(filePath) {
 }
 
 /**
- * Generates a Markdown diff between two files, showing only changes.
+ * Generates a Markdown-formatted diff for file comparison.
  * @param {string} file1Content - Content of the first file.
  * @param {string} file2Content - Content of the second file.
- * @returns {string|null} - Markdown string representing the diff or null if identical.
+ * @returns {string} - Full Markdown-formatted diff.
  */
-function generateMarkdownDiff(file1Content, file2Content) {
-    const diffResult = diff.diffWords(file1Content, file2Content);
-
-    // Check if files are identical
-    const hasChanges = diffResult.some(part => part.added || part.removed);
-    if (!hasChanges) {
-        return null; // No differences found
-    }
-
+function generateFullMarkdownDiff(file1Content, file2Content) {
+    const diffResult = diff.diffLines(file1Content, file2Content);
     let markdownDiff = '';
 
     diffResult.forEach(part => {
         if (part.added) {
-            markdownDiff += `**+ ${part.value.trim()}**\n`; // Bold added text
+            markdownDiff += `+ ${part.value}`;
         } else if (part.removed) {
-            markdownDiff += `~~- ${part.value.trim()}~~\n`; // Strikethrough removed text
+            markdownDiff += `- ${part.value}`;
+        } else {
+            markdownDiff += `  ${part.value}`; // Unchanged content
         }
-        // Skip unchanged parts
     });
 
-    return markdownDiff;
+    return markdownDiff.trim();
 }
 
 /**
- * Computes the diff and writes the Markdown diff to the output file.
+ * Logs only the additions, updates, and removals from the diff.
+ * @param {string} file1Content - Content of the first file.
+ * @param {string} file2Content - Content of the second file.
+ */
+function logChanges(file1Content, file2Content) {
+    const diffResult = diff.diffLines(file1Content, file2Content);
+
+    diffResult.forEach(part => {
+        if (part.added) {
+            console.log(`\x1b[32m+ ${part.value.trim()}\x1b[0m`); // Green for additions
+        } else if (part.removed) {
+            console.log(`\x1b[31m- ${part.value.trim()}\x1b[0m`); // Red for removals
+        }
+    });
+}
+
+/**
+ * Computes the diff, logs changes, and writes the full diff to the output file.
  * @param {string} file1Path - Path to the first file.
  * @param {string} file2Path - Path to the second file.
  * @param {string} outputFilePath - Path to the output file.
@@ -60,17 +69,20 @@ async function computeAndWriteMarkdownDiff(file1Path, file2Path, outputFilePath)
             readFileContent(file2Path),
         ]);
 
-        const markdownDiff = generateMarkdownDiff(file1Content, file2Content);
+        const fullMarkdownDiff = generateFullMarkdownDiff(file1Content, file2Content);
 
-        // If no differences, do not write output
-        if (!markdownDiff) {
-            console.log("No differences found. No file generated.");
+        // Check if files are identical
+        if (!fullMarkdownDiff.trim()) {
+            console.log("No differences found.");
             return;
         }
 
-        // Write the diff to the specified output file
-        fs.writeFileSync(path.resolve(outputFilePath), markdownDiff, 'utf8');
-        console.log(`✅ Diff written to ${outputFilePath}`);
+        // Write the full diff to the output file
+        fs.writeFileSync(path.resolve(outputFilePath), fullMarkdownDiff, 'utf8');
+
+        // Log only the changes (additions/removals)
+        logChanges(file1Content, file2Content);
+
     } catch (err) {
         console.error(err);
     }
