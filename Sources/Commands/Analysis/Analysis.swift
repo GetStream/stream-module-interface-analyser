@@ -27,14 +27,24 @@ struct Analysis: ParsableCommand {
 
         let files = discoverFiles(with: "swift", in: directoryPath)
 
+        var globalItems: [PublicInterfaceEntry] = []
         for fileURL in files {
             let visitor = try ContainerVisitor(fileURL)
             let items = visitor.traverse()
             storage.set(items, for: fileURL)
+            globalItems.append(contentsOf: visitor.globalItems)
         }
 
         let source = URL(fileURLWithPath: directoryPath)
         let outputURL = URL(fileURLWithPath: outputPath)
+        storage.set(
+            [.container(
+                nil,
+                0,
+                globalItems
+            )],
+            for: .init(fileURLWithPath: directoryPath)
+        )
         let reportBuilder = ReportBuilder(storage)
         try reportBuilder.writeReport(
             for: source,

@@ -26,40 +26,18 @@ struct Diff: ParsableCommand {
     var outputPath: String
 
     func run() throws {
-        let files = [fileA, fileB]
+        let files: [String] = [fileA, fileB]
             .map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
-            .joined(separator: " ")
 
-        guard
-            let scriptURL = Bundle.module.url(forResource: "diff", withExtension: "sh")?.path,
-            let diffScript = Bundle.module.url(forResource: "diff-script", withExtension: "js")?.path
-        else {
-            throw "Unable to find the diffing script."
+        guard files.count == 2 else {
+            throw "Invalid input files"
         }
 
-        runShellCommand("\(scriptURL) \(diffScript) \(files) \(URL(fileURLWithPath: outputPath).path)")
-    }
-
-    /// Helper function to run shell commands
-    func runShellCommand(_ command: String) {
-        let process = Process()
-        process.launchPath = "/bin/bash"
-        process.arguments = ["-c", command]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        process.launch()
-        process.waitUntilExit()
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        if let output = String(data: data, encoding: .utf8) {
-            print(output)
-        }
-
-        if process.terminationStatus != 0 {
-            fatalError("❌ Command failed: \(command)")
-        }
+        let analyser = DiffAnalyzer()
+        analyser.analyzeDiff(
+            file1Path: files[0],
+            file2Path: files[1],
+            outputFilePath: outputPath
+        )
     }
 }

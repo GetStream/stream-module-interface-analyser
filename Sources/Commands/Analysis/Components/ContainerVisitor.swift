@@ -12,6 +12,8 @@ final class ContainerVisitor: SyntaxVisitor {
     private let source: String
     private var items: [PublicInterfaceEntry] = []
 
+    private(set) var globalItems: [PublicInterfaceEntry] = []
+
     init(_ fileURL: URL) throws {
         url = fileURL
         source = try String(contentsOf: fileURL, encoding: .utf8)
@@ -66,7 +68,24 @@ final class ContainerVisitor: SyntaxVisitor {
 
         return visitContainerNode(node)
     }
-    
+
+    // MARK: - Global variables and functions
+
+    override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
+        if node.modifiers.isPublicOrOpen {
+            globalItems.append(.variable(node.removingInitializer(), 0))
+        }
+        return .skipChildren
+    }
+
+    override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
+        if node.modifiers.isPublicOrOpen {
+            globalItems.append(.function(node.removeTrivia().removeBody(), 0))
+        }
+
+        return .skipChildren
+    }
+
     // MARK: - Private Helpers
 
     private func visitContainerNode(

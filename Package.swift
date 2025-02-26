@@ -19,10 +19,6 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax")
-            ],
-            resources: [
-                .copy("Resources/diff.sh"),
-                .copy("Resources/diff-script.js"),
             ]
         )
     ]
