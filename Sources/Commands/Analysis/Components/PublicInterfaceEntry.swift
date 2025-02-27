@@ -38,3 +38,18 @@ enum PublicInterfaceEntry: CustomStringConvertible {
         }
     }
 }
+
+extension PublicInterfaceEntry {
+    func toDictionary() -> [String: Any]? {
+        switch self {
+        case .container(let node, let depth, let members):
+            return ContainerCustomStringConvertible(
+                node: node,
+                depth: depth,
+                members: members
+            ).dictionary
+        default:
+            return nil
+        }
+    }
+}

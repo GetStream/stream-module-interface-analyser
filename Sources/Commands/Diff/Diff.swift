@@ -11,7 +11,7 @@ import Foundation
 
 extension String: @retroactive Error {}
 
-struct Diff: ParsableCommand {
+struct Diff: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Compare two reports and create a diff visualisation."
     )
@@ -25,7 +25,7 @@ struct Diff: ParsableCommand {
     @Argument(help: "The output path where the markdown file will be created.")
     var outputPath: String
 
-    func run() throws {
+    func run() async throws {
         let files: [String] = [fileA, fileB]
             .map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
 
@@ -34,7 +34,7 @@ struct Diff: ParsableCommand {
         }
 
         let analyser = DiffAnalyzer()
-        analyser.analyzeDiff(
+        await analyser.analyzeDiff(
             file1Path: files[0],
             file2Path: files[1],
             outputFilePath: outputPath

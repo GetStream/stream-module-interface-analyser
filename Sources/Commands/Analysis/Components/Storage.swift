@@ -35,6 +35,21 @@ final class Storage: Decodable {
             storage.removeValue(forKey: key)
         }
     }
+
+    func toDictionary() -> [String: Any] {
+        var result = [String: Any]()
+        storage
+            .values
+            .forEach { entries in
+                for entry in entries {
+                    guard let entry = entry.toDictionary() else {
+                        continue
+                    }
+                    result.merge(entry, uniquingKeysWith: { _, new in new })
+                }
+            }
+        return result
+    }
 }
 
 extension Storage: Collection {

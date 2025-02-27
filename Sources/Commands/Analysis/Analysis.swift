@@ -5,7 +5,7 @@
 import ArgumentParser
 import Foundation
 
-struct Analysis: ParsableCommand {
+struct Analysis: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Analyse a directory and generate a open/public API report."
     )
@@ -18,7 +18,7 @@ struct Analysis: ParsableCommand {
 
     private var storage = Storage()
 
-    func run() throws {
+    func run() async throws {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: directoryPath) else {
             print("Invalid directory path.")
@@ -28,9 +28,11 @@ struct Analysis: ParsableCommand {
         let files = discoverFiles(with: "swift", in: directoryPath)
 
         var globalItems: [PublicInterfaceEntry] = []
+        var jsonEntries: [JSONDeclSyntax] = []
         for fileURL in files {
-            let visitor = try ContainerVisitor(fileURL)
+            let visitor = try SourceFileVisitor(fileURL)
             let items = visitor.traverse()
+            jsonEntries.append(contentsOf: visitor.values)
             storage.set(items, for: fileURL)
             globalItems.append(contentsOf: visitor.globalItems)
         }
@@ -82,6 +84,7 @@ struct Analysis: ParsableCommand {
             }
         }
 
-        return result
+        // ✅ Ensure consistent ordering of files
+        return result.sorted(by: { $0.path < $1.path })
     }
 }

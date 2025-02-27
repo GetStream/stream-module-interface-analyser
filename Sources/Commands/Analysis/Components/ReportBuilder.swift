@@ -40,6 +40,14 @@ final class ReportBuilder {
                 return report
             }
 
+            let dictionary = storage.toDictionary()
+            guard
+                let data = try? JSONSerialization.data(withJSONObject: dictionary, options: .prettyPrinted),
+                let jsonString = String(data: data, encoding: .utf8)
+            else {
+                return "No data available."
+            }
+
             var content: [String] = []
 
             let header = """
@@ -47,12 +55,7 @@ final class ReportBuilder {
             
             """
 
-            content
-                .append(
-                    contentsOf: storage
-                        .sorted()
-                        .map { $0.value.map(\.description).joined() }
-                )
+            content.append(jsonString)
 
             let footer = """
             
