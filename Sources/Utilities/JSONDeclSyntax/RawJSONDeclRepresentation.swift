@@ -157,7 +157,7 @@ extension AnyJSONDeclSyntax {
             return EnumCaseJSONDeclSyntax(
                 modifiers: modifiers,
                 attributes: attributes,
-                name: name,
+                name: name
             )
 
         case .function:
