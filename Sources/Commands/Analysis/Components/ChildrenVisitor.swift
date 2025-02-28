@@ -6,18 +6,24 @@ import SwiftSyntax
 
 final class ChildrenVisitor: SyntaxVisitor {
 
-    private let parent: JSONParentDeclSyntax
+    private var parent: any JSONParentDeclSyntax
+    private let membersBlock: MemberBlockSyntax?
 
     init(
-        parent: JSONParentDeclSyntax,
+        parent: any JSONParentDeclSyntax,
+        membersBlock: MemberBlockSyntax?,
         viewMode: SyntaxTreeViewMode = .all
     ) {
         self.parent = parent
+        self.membersBlock = membersBlock
         super.init(viewMode: viewMode)
     }
 
-    func traverse() {
-        super.walk(parent.membersBlock)
+    func traverse() -> any JSONParentDeclSyntax {
+        if let membersBlock {
+            super.walk(membersBlock)
+        }
+        return parent
     }
 
     // MARK: - Container
@@ -71,19 +77,26 @@ final class ChildrenVisitor: SyntaxVisitor {
     // MARK: - Private Helpers
 
     private func process(_ node: SyntaxProtocol) -> SyntaxVisitorContinueKind {
-        var nestedParent: JSONParentDeclSyntax?
+        var nestedParent: (any JSONParentDeclSyntax)?
+        var membersBlock: MemberBlockSyntax?
         if let value = node.as(ClassDeclSyntax.self), value.modifiers.isPublicOrOpen {
             nestedParent = ClassJSONDeclSyntax(value)
+            membersBlock = value.memberBlock
         } else if let value = node.as(StructDeclSyntax.self), value.modifiers.isPublicOrOpen {
             nestedParent = StructJSONDeclSyntax(value)
+            membersBlock = value.memberBlock
         } else if let value = node.as(EnumDeclSyntax.self), value.modifiers.isPublicOrOpen {
             nestedParent = EnumJSONDeclSyntax(value)
+            membersBlock = value.memberBlock
         } else if let value = node.as(ActorDeclSyntax.self), value.modifiers.isPublicOrOpen {
             nestedParent = ActorJSONDeclSyntax(value)
+            membersBlock = value.memberBlock
         } else if let value = node.as(ProtocolDeclSyntax.self), value.modifiers.isPublicOrOpen {
             nestedParent = ProtocolJSONDeclSyntax(value)
+            membersBlock = value.memberBlock
         } else if let value = node.as(ExtensionDeclSyntax.self), value.modifiers.isPublicOrOpen || value.hasPublicMembers {
             nestedParent = ExtensionJSONDeclSyntax(value)
+            membersBlock = value.memberBlock
         } else if let value = node.as(VariableDeclSyntax.self), value.modifiers.isPublicOrOpen {
             parent.addChild(value)
         } else if let value = node.as(EnumCaseDeclSyntax.self) {
@@ -97,9 +110,9 @@ final class ChildrenVisitor: SyntaxVisitor {
         }
 
         if let nestedParent {
-            let childrenVisitor = ChildrenVisitor(parent: nestedParent)
-            childrenVisitor.traverse()
-            parent.addNestedParent(nestedParent)
+            let childrenVisitor = ChildrenVisitor(parent: nestedParent, membersBlock: membersBlock)
+            let updatedParent = childrenVisitor.traverse()
+            parent.addNestedParent(updatedParent)
             return .skipChildren
         } else {
             return .visitChildren

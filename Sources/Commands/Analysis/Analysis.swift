@@ -16,8 +16,6 @@ struct Analysis: AsyncParsableCommand {
     @Argument(help: "The file path to save the report.")
     var outputPath: String
 
-    private var storage = Storage()
-
     func run() async throws {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: directoryPath) else {
@@ -27,32 +25,15 @@ struct Analysis: AsyncParsableCommand {
 
         let files = discoverFiles(with: "swift", in: directoryPath)
 
-        var globalItems: [PublicInterfaceEntry] = []
-        var jsonEntries: [JSONDeclSyntax] = []
+        var items: [JSONDeclSyntax] = []
         for fileURL in files {
             let visitor = try SourceFileVisitor(fileURL)
-            let items = visitor.traverse()
-            jsonEntries.append(contentsOf: visitor.values)
-            storage.set(items, for: fileURL)
-            globalItems.append(contentsOf: visitor.globalItems)
+            let visitorItems = visitor.traverse()
+            items.append(contentsOf: visitorItems)
         }
 
-        let source = URL(fileURLWithPath: directoryPath)
-        let outputURL = URL(fileURLWithPath: outputPath)
-        storage.set(
-            [.container(
-                nil,
-                0,
-                globalItems
-            )],
-            for: .init(fileURLWithPath: directoryPath)
-        )
-        let reportBuilder = ReportBuilder(storage)
-        try reportBuilder.writeReport(
-            for: source,
-            to: outputURL
-        )
-        reportBuilder.logReport(for: source)
+        try writeJSONToFile(items.map { $0.eraseToAnyJSONDeclSyntax() })
+        print("Public interface report was written successfully at \(outputPath)")
     }
 
     // MARK: Private Helpers
@@ -86,5 +67,24 @@ struct Analysis: AsyncParsableCommand {
 
         // ✅ Ensure consistent ordering of files
         return result.sorted(by: { $0.path < $1.path })
+    }
+
+    func writeJSONToFile<T: Encodable>(_ data: T) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys] // Pretty print + sorted keys
+
+        let jsonData = try encoder.encode(data) // Encode the object
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else {
+            throw NSError(domain: "EncodingError", code: -1, userInfo: nil)
+        }
+
+        let fileURL = URL(fileURLWithPath: outputPath)
+        try jsonString.write(
+            to: fileURL,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        print("JSON successfully written to:", fileURL)
     }
 }

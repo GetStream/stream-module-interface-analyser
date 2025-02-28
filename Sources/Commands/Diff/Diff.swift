@@ -26,18 +26,23 @@ struct Diff: AsyncParsableCommand {
     var outputPath: String
 
     func run() async throws {
-        let files: [String] = [fileA, fileB]
-            .map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
-
-        guard files.count == 2 else {
-            throw "Invalid input files"
-        }
+        let jsonFileA = try readJSONFromFile(from: fileA)
+        let jsonFileB = try readJSONFromFile(from: fileB)
 
         let analyser = DiffAnalyzer()
-        await analyser.analyzeDiff(
-            file1Path: files[0],
-            file2Path: files[1],
+        try await analyser.analyzeDiff(
+            newItems: jsonFileA,
+            oldItems: jsonFileB,
             outputFilePath: outputPath
         )
+    }
+
+    func readJSONFromFile(from path: String) throws -> [JSONDeclSyntax] {
+        let fileURL = URL(fileURLWithPath: path)
+
+        let jsonData = try Data(contentsOf: fileURL) // Read data from file
+        let decoder = JSONDecoder()
+        let anyJSON = try decoder.decode([AnyJSONDeclSyntax].self, from: jsonData)
+        return anyJSON.compactMap(\.rawValue)
     }
 }
