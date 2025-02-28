@@ -45,6 +45,19 @@ struct DiffAnalyzer {
             changedItems[commonKey] = (oldItem, newItem)
         }
 
+        print(
+            """
+            Public interface differences:
+                added: \(addedItems.endIndex)
+                removed: \(removedItems.endIndex)
+                changed: \(changedItems.count)
+            """
+        )
+
+        guard !addedItems.isEmpty || !removedItems.isEmpty || !changedItems.isEmpty else {
+            return
+        }
+
         var resultComponents = [String]()
         resultComponents.append(
             """
