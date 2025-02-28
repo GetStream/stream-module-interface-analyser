@@ -11,7 +11,7 @@ import Foundation
 
 extension String: @retroactive Error {}
 
-struct Diff: ParsableCommand {
+struct Diff: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Compare two reports and create a diff visualisation."
     )
@@ -25,19 +25,24 @@ struct Diff: ParsableCommand {
     @Argument(help: "The output path where the markdown file will be created.")
     var outputPath: String
 
-    func run() throws {
-        let files: [String] = [fileA, fileB]
-            .map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
-
-        guard files.count == 2 else {
-            throw "Invalid input files"
-        }
+    func run() async throws {
+        let jsonFileA = try readJSONFromFile(from: fileA)
+        let jsonFileB = try readJSONFromFile(from: fileB)
 
         let analyser = DiffAnalyzer()
-        analyser.analyzeDiff(
-            file1Path: files[0],
-            file2Path: files[1],
+        try await analyser.analyzeDiff(
+            newItems: jsonFileA,
+            oldItems: jsonFileB,
             outputFilePath: outputPath
         )
+    }
+
+    func readJSONFromFile(from path: String) throws -> [JSONDeclSyntax] {
+        let fileURL = URL(fileURLWithPath: path)
+
+        let jsonData = try Data(contentsOf: fileURL) // Read data from file
+        let decoder = JSONDecoder()
+        let anyJSON = try decoder.decode([AnyJSONDeclSyntax].self, from: jsonData)
+        return anyJSON.compactMap(\.rawValue)
     }
 }

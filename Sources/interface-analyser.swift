@@ -5,7 +5,7 @@
 import ArgumentParser
 
 @main
-struct MainConmmand: ParsableCommand {
+struct MainConmmand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "A Swift CLI tool to analyse the open and public APIs.",
         subcommands: [Analysis.self, Diff.self],
