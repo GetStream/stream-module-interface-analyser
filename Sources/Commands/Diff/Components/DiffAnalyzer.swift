@@ -120,7 +120,9 @@ struct DiffAnalyzer {
                 let newLine = newLines[newIndex]
 
                 if oldLine == newLine {
-                    diffResult.append(" " + oldLine) // Unchanged line (optional)
+                    if oldIndex == newIndex, oldIndex == 0 {
+                        diffResult.append(" " + oldLine) // Unchanged line (optional)
+                    }
                 } else {
                     diffResult.append("- " + oldLine) // Mark as removed
                     diffResult.append("+ " + newLine) // Mark as added
