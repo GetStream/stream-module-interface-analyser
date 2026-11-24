@@ -17,7 +17,7 @@ permissions:
 jobs:
   build-linux:
     name: Build Linux binary
-    runs-on: ubuntu-latest
+    runs-on: { group: github-public-amd64 }
     # Ubuntu 22.04 keeps the binary usable on older glibc versions.
     container: swift:6.0-jammy
     steps:
