@@ -28,7 +28,7 @@ jobs:
 
   linux:
     name: Build (Linux)
-    runs-on: ubuntu-latest
+    runs-on: { group: github-public-amd64 }
     # Ubuntu 22.04 keeps the binary usable on older glibc versions.
     container: swift:6.0-jammy
     steps:
@@ -48,7 +48,7 @@ jobs:
 
   linux-smoke-test:
     name: Smoke test (Linux, no Swift toolchain)
-    runs-on: ubuntu-latest
+    runs-on: { group: github-public-amd64 }
     needs: linux
     steps:
       - uses: actions/checkout@v4
