@@ -16,7 +16,7 @@ permissions:
 jobs:
   macos:
     name: Build (macOS)
-    runs-on: macos-15
+    runs-on: { group: scaleway-macos }
     steps:
       - uses: actions/checkout@v4
 

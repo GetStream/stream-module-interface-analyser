@@ -38,7 +38,7 @@ jobs:
 
   release:
     name: Create and Publish Release
-    runs-on: macos-15
+    runs-on: { group: scaleway-macos }
     needs: build-linux
     permissions:
       contents: write # to create the release and upload the binaries
